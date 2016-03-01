@@ -108,7 +108,7 @@ use shoghicp\BigBrother\network\protocol\Play\UseBedPacket;
 use shoghicp\BigBrother\network\protocol\Play\WindowItemsPacket;
 use shoghicp\BigBrother\utils\Binary;
 
-class Translator_39 implements Translator{
+class Translator_45 implements Translator{
 
 	public function interfaceToServer(DesktopPlayer $player, Packet $packet){
 		if($packet->pid() !== 0x00 and $packet->pid() !== 0x03 and $packet->pid() !== 0x04 and $packet->pid() !== 0x05 and $packet->pid() !== 0x06){
