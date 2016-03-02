@@ -1,0 +1,24 @@
+1° Sign error:
+directory: /src/shoghicp/BigBrother/network/translation/Translator_45
+Error Line: 861
+
+[852] 				if($nbt["id"] !== Tile::SIGN){
+[853] 					return null;
+[854] 				}else{
+[855] 					$index = Level::chunkHash($packet->x >> 4, $packet->z >> 4);
+[856] 					if(isset($player->usedChunks[$index]) and $player->usedChunks[$index]){
+[857] 						$pk = new UpdateSignPacket();
+[858] 						$pk->x = $packet->x;
+[859] 						$pk->y = $packet->y;
+[860] 						$pk->z = $packet->z;
+[861] 						$pk->line1 = BigBrother::toJSON($nbt["Text1"]);
+[862] 						$pk->line2 = BigBrother::toJSON($nbt["Text2"]);
+[863] 						$pk->line3 = BigBrother::toJSON($nbt["Text3"]);
+[864] 						$pk->line4 = BigBrother::toJSON($nbt["Text4"]);
+[865] 						return $pk;
+[866] 					}
+[867] 				}
+[868] 				
+[869] 				return null;
+[870] 
+[871] 			case Info::SET_DIFFICULTY_PACKET:
