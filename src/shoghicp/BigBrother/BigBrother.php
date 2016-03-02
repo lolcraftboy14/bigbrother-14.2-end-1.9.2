@@ -25,7 +25,7 @@ use pocketmine\network\protocol\PlayerActionPacket;
 use shoghicp\BigBrother\network\Info as MCInfo;
 use shoghicp\BigBrother\network\ProtocolInterface;
 use shoghicp\BigBrother\network\translation\Translator;
-use shoghicp\BigBrother\network\translation\Translator_45;
+use shoghicp\BigBrother\network\translation\Translator_42;
 use shoghicp\BigBrother\network\protocol\Play\RespawnPacket;
 use shoghicp\BigBrother\network\protocol\Play\ResourcePackSendPacket;
 
@@ -75,8 +75,8 @@ class BigBrother extends PluginBase implements Listener{
 		}
 
 		switch(Info::CURRENT_PROTOCOL){
-			case 45:
-				$this->translator = new Translator_45();
+			case 42:
+				$this->translator = new Translator_42();
 			break;
 			default:
 				$this->getLogger()->critical("Couldn't find a protocol translator for #".Info::CURRENT_PROTOCOL .", disabling plugin");
@@ -106,10 +106,10 @@ class BigBrother extends PluginBase implements Listener{
 	}
 
 	protected function enableServer(){
-		$this->getLogger()->info("Starting Minecraft: PC server on ".($this->getIp() === "0.0.0.0" ? "*" : $this->getIp()).":".$this->getPort()." version ".MCInfo::VERSION);
+		$this->getLogger()->info("Starting Minecraft: PC server on: ".($this->getIp() === "0.0.0.0" ? "*" : $this->getIp()).":".$this->getPort()." version ".MCInfo::VERSION);
 
 		$disable = true;
-		foreach($this->getServer()->getInterfaces() as $interface){
+		foreach($this->getServer()->getInterface() as $interface){
 			if($interface instanceof ProtocolInterface){
 				$disable = false;
 			}
