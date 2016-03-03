@@ -844,30 +844,6 @@ class Translator_45 implements Translator{
 			case Info::CRAFTING_DATA_PACKET:
 				$player->setSetting(["Recipes" => $packet->entries, "cleanRecipes" => $packet->cleanRecipes]);
 				return null;
-
-			case Info::BLOCK_ENTITY_DATA_PACKET:
-				$nbt = new NBT(NBT::LITTLE_ENDIAN);
-				$nbt->read($packet->namedtag);
-				$nbt = $nbt->getData();
-				if($nbt["id"] !== Tile::SIGN){
-					return null;
-				}else{
-					$index = Level::chunkHash($packet->x >> 4, $packet->z >> 4);
-					if(isset($player->usedChunks[$index]) and $player->usedChunks[$index]){
-						$pk = new UpdateSignPacket();
-						$pk->x = $packet->x;
-						$pk->y = $packet->y;
-						$pk->z = $packet->z;
-						$pk->line1 = BigBrother::toJSON($nbt["Text1"]);
-						$pk->line2 = BigBrother::toJSON($nbt["Text2"]);
-						$pk->line3 = BigBrother::toJSON($nbt["Text3"]);
-						$pk->line4 = BigBrother::toJSON($nbt["Text4"]);
-						return $pk;
-					}
-				}
-				
-				return null;
-
 			case Info::SET_DIFFICULTY_PACKET:
 				$pk = new ServerDifficultyPacket();
 				$pk->difficulty = $packet->difficulty;
