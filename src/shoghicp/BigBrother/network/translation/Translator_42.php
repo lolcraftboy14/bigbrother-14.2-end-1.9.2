@@ -104,7 +104,7 @@ use shoghicp\BigBrother\network\protocol\Play\UpdateSignPacket;
 use shoghicp\BigBrother\network\protocol\Play\UseBedPacket;
 use shoghicp\BigBrother\network\protocol\Play\WindowItemsPacket;
 use shoghicp\BigBrother\utils\Binary;
-class Translator_45 implements Translator{
+class Translator_42 implements Translator{
 	public function interfaceToServer(DesktopPlayer $player, Packet $packet){
 		if($packet->pid() !== 0x00 and $packet->pid() !== 0x03 and $packet->pid() !== 0x04 and $packet->pid() !== 0x05 and $packet->pid() !== 0x06){
 			echo "[Receive] 0x".bin2hex(chr($packet->pid()))."\n"; //Debug
