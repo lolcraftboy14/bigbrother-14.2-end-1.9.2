@@ -17,11 +17,11 @@
 
 namespace shoghicp\BigBrother;
 
-use pocketmine\plugin\PluginBase;
+use softmine\plugin\PluginBase;
 
 use phpseclib\Crypt\RSA;
-use pocketmine\network\protocol\Info;
-use pocketmine\network\protocol\PlayerActionPacket;
+use softmine\network\protocol\Info;
+use softmine\network\protocol\PlayerActionPacket;
 use shoghicp\BigBrother\network\Info as MCInfo;
 use shoghicp\BigBrother\network\ProtocolInterface;
 use shoghicp\BigBrother\network\translation\Translator;
@@ -30,15 +30,15 @@ use shoghicp\BigBrother\network\translation\Translator_45;
 use shoghicp\BigBrother\network\protocol\Play\RespawnPacket;
 use shoghicp\BigBrother\network\protocol\Play\ResourcePackSendPacket;
 
-use pocketmine\block\Block;
-use pocketmine\math\Vector3;
-use pocketmine\tile\Sign;
-use pocketmine\Achievement;
+use softmine\block\Block;
+use softmine\math\Vector3;
+use softmine\tile\Sign;
+use softmine\Achievement;
 
-use pocketmine\event\Listener;
-use pocketmine\event\player\PlayerPreLoginEvent;
-use pocketmine\event\player\PlayerRespawnEvent;
-use pocketmine\event\player\PlayerInteractEvent;
+use softmine\event\Listener;
+use softmine\event\player\PlayerPreLoginEvent;
+use softmine\event\player\PlayerRespawnEvent;
+use softmine\event\player\PlayerInteractEvent;
 
 class BigBrother extends PluginBase implements Listener{
 
