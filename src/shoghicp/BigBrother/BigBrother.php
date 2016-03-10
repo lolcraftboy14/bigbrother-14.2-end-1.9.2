@@ -58,7 +58,7 @@ class BigBrother extends PluginBase implements Listener{
 	protected $translator;
 
 	public function onEnable(){
-		mkdir($this->dataFolder, 0755, true);
+		@mkdir($this->getDataFolder(), 0777, true);
 		$this->reloadConfig();
 
 		$this->onlineMode = (bool) $this->getConfig()->get("online-mode");
