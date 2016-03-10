@@ -58,10 +58,7 @@ class BigBrother extends PluginBase implements Listener{
 	protected $translator;
 
 	public function onEnable(){
-		$this->saveDefaultConfig();
-		$this->saveResource("server-icon.png", false);
-		$this->saveResource("steve.yml", false);
-		$this->saveResource("alex.yml", false);
+		mkdir($this->dataFolder, 0755, true);
 		$this->reloadConfig();
 
 		$this->onlineMode = (bool) $this->getConfig()->get("online-mode");
