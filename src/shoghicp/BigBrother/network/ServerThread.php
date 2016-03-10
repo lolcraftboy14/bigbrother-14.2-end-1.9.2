@@ -63,6 +63,10 @@ public function __construct(\ThreadedLogger $logger, \ClassLoader $loader, $port
 		$this->interface = $interface;
 		$this->logger = $logger;
 		$this->loader = $loader;
+		$this->data = serialize([
+			"motd" => $motd,
+			"icon" => $icon
+		]);
 		$loadPaths = [];
 		$this->addDependency($loadPaths, new \ReflectionClass($logger));
 		$this->addDependency($loadPaths, new \ReflectionClass($loader));
