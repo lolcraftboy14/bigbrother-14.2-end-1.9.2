@@ -15,3 +15,7 @@ the pocketmine plugin big brother for 0.14.0
 - Optimized server
 - Place Blocks
 - PC Receive Message
+- 
+##Info
+http://wiki.vg/Pocket_Minecraft_Protocol#Login_Packets
+http://wiki.vg/Protocol

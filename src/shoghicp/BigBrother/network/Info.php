@@ -23,8 +23,8 @@ abstract class Info{
 	 * Actual Minecraft protocol version
 	 */
 
-	const VERSION = "1.9";
-	const PROTOCOL = 107;
+	const VERSION = "1.9.2";
+	const PROTOCOL = 109;
 
 
 }
