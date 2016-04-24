@@ -72,8 +72,8 @@ class BigBrother extends PluginBase implements Listener{
 		}
 
 		switch(Info::CURRENT_PROTOCOL){
-			case 46:
-				$this->translator = new Translator_46();
+			case 40:
+				$this->translator = new Translator_40();
 			break;
 			default:
 				$this->getLogger()->critical("Couldn't find a protocol translator for #".Info::CURRENT_PROTOCOL .", disabling plugin");
