@@ -6,9 +6,9 @@ the pocketmine plugin big brother for 0.14.1
 
 - master = PHP7
 
-- Minecraft PC 1.9
+- Minecraft PC 1.9.3
 
-- Minecraft PE 0.14.1
+- Minecraft PE 0.14.2
 
 - PHP5 tree 
 
