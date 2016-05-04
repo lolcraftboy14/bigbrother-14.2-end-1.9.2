@@ -62,7 +62,7 @@ class BigBrother extends PluginBase implements Listener{
 
 		$this->onlineMode = (bool) $this->getConfig()->get("online-mode");
 		if($this->onlineMode and !function_exists("mcrypt_generic_init")){
-			$this->onlineMode = false;
+			$this->onlineMode =true;
 			$this->getLogger()->notice("no mcrypt detected, online-mode has been disabled. Try using the latest PHP binaries");
 		}
 
