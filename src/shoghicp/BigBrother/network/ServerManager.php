@@ -1,5 +1,5 @@
-<?php
 
+<?php
 /*
  * BigBrother plugin for PocketMine-MP
  * Copyright (C) 2014 shoghicp <https://github.com/shoghicp/BigBrother>
@@ -14,259 +14,135 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
 */
-
 namespace shoghicp\BigBrother\network;
-
-use shoghicp\BigBrother\utils\Binary;
-
-class ServerManager{
-
-	/*
-	 * Internal Packet:
-	 * int32 (length without this field)
-	 * byte (packet ID)
-	 * payload
-	 */
-
-	/*
-	 * SEND_PACKET payload:
-	 * int32 (session identifier)
-	 * packet (binary payload)
-	 */
-	const PACKET_SEND_PACKET = 0x01;
-
-	/*
-	 * OPEN_SESSION payload:
-	 * int32 (session identifier)
-	 * byte (address length)
-	 * byte[] (address)
-	 * short (port)
-	 */
-	const PACKET_OPEN_SESSION = 0x02;
-
-	/*
-	 * CLOSE_SESSION payload:
-	 * int32 (session identifier)
-	 */
-	const PACKET_CLOSE_SESSION = 0x03;
-
-	/*
-	 * ENABLE_ENCRYPTION payload:
-	 * int32 (session identifier)
-	 * byte[] (secret)
-	 */
-	const PACKET_ENABLE_ENCRYPTION = 0x04;
-
-	/*
-	 * ENABLE_ENCRYPTION payload:
-	 * int32 (session identifier)
-	 * int (threshold)
-	 */
-	const PACKET_SET_COMPRESSION = 0x05;
-
-	const PACKET_SET_OPTION = 0x06;
-
-	/*
-	 * no payload
-	 */
-	const PACKET_SHUTDOWN = 0xfe;
-
-	/*
-	 * no payload
-	 */
-	const PACKET_EMERGENCY_SHUTDOWN = 0xff;
-
-	/** @var ServerThread */
-	protected $thread;
-	protected $fp;
-	protected $socket;
-	protected $identifier = 0;
-	protected $sockets = [];
-	/** @var Session[] */
-	protected $sessions = [];
-	/** @var \Logger */
+use pocketmine\Thread;
+class ServerThread extends Thread{
+	protected $port;
+	protected $interface;
+	/** @var \ThreadedLogger */
 	protected $logger;
-	protected $shutdown = false;
-
-	/** @var string[] */
-	public $sample = [];
-	public $description;
-	public $favicon;
-	public $serverdata = [
-		"MaxPlayers" => 20,
-		"OnlinePlayers" => 0,
-	];
-
-	public function __construct(ServerThread $thread, $port, $interface, $description = "", $favicon = null){
-		$this->thread = $thread;
-		$this->description = $description;
-		if($favicon === null or ($image = file_get_contents($favicon)) == ""){
-			$this->favicon = null;
-		}else{
-			$this->favicon = "data:image/png;base64,".base64_encode($image);
+	protected $loader;
+	protected $data;
+	public $loadPaths;
+	protected $shutdown;
+	/** @var \Threaded */
+	protected $externalQueue;
+	/** @var \Threaded */
+	protected $internalQueue;
+	protected $externalSocket;
+	protected $internalSocket;
+	/**
+	 * @param \Threaded       $externalQueue
+	 * @param \Threaded       $internalQueue
+	 * @param \ThreadedLogger $logger
+	 * @param \ClassLoader    $loader
+	 * @param int             $port 1-65536
+	 * @param string          $interface
+	 * @param string          $motd
+	 * @param string          $icon
+	 *
+	 * @throws \Exception
+	 */
+public function __construct(\ThreadedLogger $logger, \ClassLoader $loader, $port, $interface = "0.0.0.0", $motd = "Minecraft: PE server", $icon = null){
+		$this->externalQueue = new \Threaded;
+		$this->internalQueue = new \Threaded;
+		$this->port = (int) $port;
+		if($port < 1 or $port > 65536){
+			throw new \Exception("Invalid port range");
 		}
-
-		$this->logger = $this->thread->getLogger();
-		$this->fp = $this->thread->getInternalSocket();
-
-		if($interface === ""){
-			$interface = "0.0.0.0";
+		$this->interface = $interface;
+		$this->logger = $logger;
+		$this->loader = $loader;
+		$this->data = serialize([
+			"motd" => $motd,
+			"icon" => $icon
+		]);
+		$loadPaths = [];
+		$this->addDependency($loadPaths, new \ReflectionClass($logger));
+		$this->addDependency($loadPaths, new \ReflectionClass($loader));
+		$this->loadPaths = array_reverse($loadPaths);
+		$this->shutdown = false;
+		if(($sockets = stream_socket_pair((strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? STREAM_PF_INET : STREAM_PF_UNIX), STREAM_SOCK_STREAM, STREAM_IPPROTO_IP)) === false){
+			throw new \Exception("Could not create IPC streams. Reason: ".socket_strerror(socket_last_error()));
 		}
-
-		$this->socket = stream_socket_server("tcp://$interface:$port", $errno, $errstr, STREAM_SERVER_LISTEN | STREAM_SERVER_BIND);
-		if(!$this->socket){
-			$this->logger->critical("[BigBrother] **** FAILED TO BIND TO " . $interface . ":" . $port . "!", true, true, 0);
-			$this->logger->critical("[BigBrother] Perhaps a server is already running on that port?", true, true, 0);
-			exit(1);
-		}
-
-		$this->sockets[-1] = $this->socket;
-		$this->sockets[0] = $this->fp;
-
-		$this->process();
+		$this->internalSocket = $sockets[0];
+		stream_set_blocking($this->internalSocket, 0);
+		$this->externalSocket = $sockets[1];
+		stream_set_blocking($this->externalSocket, 0);
+		$this->start();
 	}
-
-	public function getServerData(){
-		return $this->serverdata;
+	protected function addDependency(array &$loadPaths, \ReflectionClass $dep){
+		if($dep->getFileName() !== false){
+			$loadPaths[$dep->getName()] = $dep->getFileName();
+		}
+		if($dep->getParentClass() instanceof \ReflectionClass){
+			$this->addDependency($loadPaths, $dep->getParentClass());
+		}
+		foreach($dep->getInterfaces() as $interface){
+			$this->addDependency($loadPaths, $interface);
+		}
 	}
-
+	public function isShutdown(){
+		return $this->shutdown === true;
+	}
 	public function shutdown(){
-		$this->thread->shutdown();
-		usleep(50000); //Sleep for 1 tick
-       	$this->thread->kill();
+		$this->shutdown = true;
 	}
-
-	protected function processPacket(){
-		@fread($this->fp, 1);
-		if(strlen($packet = $this->thread->readMainToThreadPacket()) > 0){
-			$pid = ord($packet{0});
-
-			$buffer = substr($packet, 1);
-
-			if($pid === self::PACKET_SEND_PACKET){
-				$id = Binary::readInt(substr($buffer, 0, 4));
-				$data = substr($buffer, 4);
-
-				if(!isset($this->sessions[$id])){
-					$this->closeSession($id, 0);
-					return true;
-				}
-				$this->sessions[$id]->writeRaw($data);
-			}elseif($pid === self::PACKET_ENABLE_ENCRYPTION){
-				$id = Binary::readInt(substr($buffer, 0, 4));
-				$secret = substr($buffer, 4);
-
-				if(!isset($this->sessions[$id])){
-					$this->closeSession($id, 0);
-					return true;
-				}
-				$this->sessions[$id]->enableEncryption($secret);
-			}elseif($pid === self::PACKET_SET_COMPRESSION){
-				$id = Binary::readInt(substr($buffer, 0, 4));
-				$threshold = Binary::readInt(substr($buffer, 4, 4));
-
-				if(!isset($this->sessions[$id])){
-					$this->closeSession($id, 0);
-					return true;
-				}
-				$this->sessions[$id]->setCompression($threshold);
-			}elseif($pid === self::PACKET_SET_OPTION){
-				$offset = 1;
-				$len = ord($packet{$offset++});
-                $name = substr($packet, $offset, $len);
-                $offset += $len;
-                $value = substr($packet, $offset);
-                switch($name){
-                	case "name":
-                		$this->serverdata = json_decode($value, true);
-                	break;
-                }
-			}elseif($pid === self::PACKET_CLOSE_SESSION){
-				$id = Binary::readInt(substr($buffer, 0, 4));
-				if(isset($this->sessions[$id])){
-					$this->close($this->sessions[$id]);
-				}else{
-					$this->closeSession($id, 1);
-				}
-			}elseif($pid === self::PACKET_SHUTDOWN){
-				foreach($this->sessions as $session){
-					$session->close();
-				}
-
-				$this->shutdown();
-				stream_socket_shutdown($this->socket, STREAM_SHUT_RDWR);
-				$this->shutdown = true;
-			}elseif($pid === self::PACKET_EMERGENCY_SHUTDOWN){
-				$this->shutdown = true;
-			}
-
-			return true;
-		}
-
-		return false;
-	}
-
-	public function sendPacket($id, $buffer){
-		$this->thread->pushThreadToMainPacket(chr(self::PACKET_SEND_PACKET) . Binary::writeInt($id) . $buffer);
-	}
-
-	public function openSession(Session $session){
-		$data = chr(self::PACKET_OPEN_SESSION) . Binary::writeInt($session->getID()) . chr(strlen($session->getAddress())) . $session->getAddress() . Binary::writeShort($session->getPort());
-		$this->thread->pushThreadToMainPacket($data);
-	}
-
-	protected function closeSession($id, $flag){
-		$this->thread->pushThreadToMainPacket(chr(self::PACKET_CLOSE_SESSION) . Binary::writeInt($id).Binary::writeInt($flag));
-	}
-
-	private function process(){
-		while($this->shutdown !== true){
-			$sockets = $this->sockets;
-			$write = null;
-			$except = null;
-			if(@stream_select($sockets, $write, $except, null) > 0){
-				if(isset($sockets[-1])){
-					unset($sockets[-1]);
-					if($connection = stream_socket_accept($this->socket, 0)){
-						$this->identifier++;
-						$this->sockets[$this->identifier] = $connection;
-						$this->sessions[$this->identifier] = new Session($this, $this->identifier, $connection);
-					}
-				}elseif(isset($sockets[0])){
-					if($sockets[0] !== $this->fp){
-						$this->findSocket($sockets[0]);
-					}else{
-						while($this->processPacket()){}
-					}
-					unset($sockets[0]);
-				}
-
-				foreach($sockets as $identifier => $socket){
-					if(isset($this->sessions[$identifier]) and $this->sockets[$identifier] === $socket){
-						$this->sessions[$identifier]->process();
-					}else{
-						$this->findSocket($socket);
-					}
-				}
-			}
+	public function shutdownHandler(){
+		if($this->shutdown !== true){
+			$this->getLogger()->emergency("[ServerThread #". \Thread::getCurrentThreadId() ."] ServerThread crashed!");
 		}
 	}
-
-	protected function findSocket($s){
-		foreach($this->sockets as $identifier => $socket){
-			if($identifier > 0 and $socket === $s){
-				$this->sessions[$identifier]->process();
-				break;
+	public function getPort(){
+		return $this->port;
+	}
+	public function getInterface(){
+		return $this->interface;
+	}
+	/**
+	 * @return \ThreadedLogger
+	 */
+	public function getLogger(){
+		return $this->logger;
+	}
+	/**
+	 * @return \Threaded
+	 */
+	public function getExternalQueue(){
+		return $this->externalQueue;
+	}
+	/**
+	 * @return \Threaded
+	 */
+	public function getInternalQueue(){
+		return $this->internalQueue;
+	}
+	public function getInternalSocket(){
+		return $this->internalSocket;
+	}
+	public function pushMainToThreadPacket($str){
+		$this->internalQueue[] = $str;
+		@fwrite($this->externalSocket, "\xff", 1); //Notify
+	}
+	public function readMainToThreadPacket(){
+		return $this->internalQueue->shift();
+	}
+	public function pushThreadToMainPacket($str){
+		$this->externalQueue[] = $str;
+	}
+	public function readThreadToMainPacket(){
+		return $this->externalQueue->shift();
+	}
+	public function run(){
+		//Load removed dependencies, can't use require_once()
+		foreach($this->loadPaths as $name => $path){
+			if(!class_exists($name, false) and !interface_exists($name, false)){
+				require($path);
 			}
 		}
+		$this->loader->register();
+		register_shutdown_function([$this, "shutdownHandler"]);
+		$data = unserialize($this->data);
+		$manager = new ServerManager($this, $this->port, $this->interface, $data["motd"], $data["icon"]);
 	}
 
-	public function close(Session $session){
-		$identifier = $session->getID();
-		fclose($this->sockets[$identifier]);
-		unset($this->sockets[$identifier]);
-		unset($this->sessions[$identifier]);
-		$this->closeSession($identifier, 0);
-	}
-
-}
