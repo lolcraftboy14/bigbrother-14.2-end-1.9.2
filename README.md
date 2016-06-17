@@ -1,14 +1,14 @@
 # BigBrother-0.14.1
 the pocketmine plugin big brother for 0.14.1
-- Travis-CI: [![Travis-CI](https://travis-ci.org/Driesboy/BigBrother-1.9.2.svg?branch=master)](https://travis-ci.org/Driesboy/BigBrother-1.9.2) 
+- Travis-CI: [![Travis-CI](https://travis-ci.org/Driesboy/BigBrother-1.9.2.svg?branch=master)](https://travis-ci.org/Driesboy/BigBrother-1.8) 
 
 ##Support Version
 
 - master = PHP7
 
-- Minecraft PC 1.9.3
+- Minecraft PC 1.8
 
-- Minecraft PE 0.14.2
+- Minecraft PE 0.15.0
 
 - PHP5 tree 
 
