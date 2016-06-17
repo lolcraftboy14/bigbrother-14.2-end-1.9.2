@@ -1,4 +1,4 @@
-# BigBrother-0.14.1
+# BigBrother-0.15.0
 the pocketmine plugin big brother for 0.14.1
 - Travis-CI: [![Travis-CI](https://travis-ci.org/Driesboy/BigBrother-1.9.2.svg?branch=master)](https://travis-ci.org/Driesboy/BigBrother-1.8) 
 
